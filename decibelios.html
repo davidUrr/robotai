@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Medidor de Decibelios</title>
+</head>
+<body>
+  <h1>Medidor de Decibelios del Micrófono</h1>
+  <p>Nivel de decibelios: <span id="decibelios">0 dB</span></p>
+  <p>Nivel de voltios: <span id="voltaje">0 Pa</span></p>
+  <h1>Seguimiento de Ubicación del Dispositivo</h1>    
+  <p>Latitud: <span id="latitud">-</span></p>
+  <p>Longitud: <span id="longitud">-</span></p>
+  <h1>Estado de la Batería</h1>
+  <p>Nivel de batería: <span id="nivel-bateria">Desconocido</span></p>
+  <p>Estado de carga: <span id="estado-carga">Desconocido</span></p>
+
+  <script>
+    window.onload = function() {
+		if ('getBattery' in navigator) {
+			navigator.getBattery().then(function(battery) {
+			  updateBatteryStatus(battery);
+
+			  battery.addEventListener('levelchange', function() {
+				updateBatteryStatus(battery);
+			  });
+
+			  battery.addEventListener('chargingchange', function() {
+				updateBatteryStatus(battery);
+			  });
+			});
+		  } else {
+			document.getElementById("nivel-bateria").textContent = "No compatible con la API de batería";
+			document.getElementById("estado-carga").textContent = "No compatible con la API de batería";
+		  }
+
+		  function updateBatteryStatus(battery) {
+			const nivelBateria = (battery.level * 100).toFixed(2) + "%";
+			const estadoCarga = battery.charging ? "Cargando" : "No Cargando";
+
+			document.getElementById("nivel-bateria").textContent = nivelBateria;
+			document.getElementById("estado-carga").textContent = estadoCarga;
+		  }
+      // Acceder al micrófono utilizando la API Web Audio
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const source = audioContext.createMediaStreamSource(stream);
+          const analyser = audioContext.createAnalyser();
+          source.connect(analyser);
+
+          analyser.fftSize = 256;
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+		  // Sensibilidad nominal del micrófono en dB SPL/Pa (ejemplo: 1.0 para este caso)
+		  const microphoneSensitivity = 1.0;
+
+          function updateDecibelLevel() {
+            analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            dataArray.forEach(value => sum += value);
+            const average = sum / bufferLength;
+            const decibelLevel = 20 * Math.log10(average / 255);
+			// Conversión de decibelios a voltaje utilizando la sensibilidad del micrófono
+			const voltage = Math.pow(10, decibelLevel / 20) / microphoneSensitivity;
+
+            document.getElementById("decibelios").textContent = decibelLevel.toFixed(2) + " dB";
+			document.getElementById("voltaje").textContent = voltage.toFixed(6) + " Pa";
+
+            requestAnimationFrame(updateDecibelLevel);
+          }
+
+          updateDecibelLevel();
+        })
+        .catch(function(err) {
+          console.error("Error al acceder al micrófono:", err);
+        });
+    };
+	function actualizarCoordenadas(lat, lng) {
+		document.getElementById('latitud').textContent = lat;
+		document.getElementById('longitud').textContent = lng;
+	}
+
+	function watchCoordenadas() {
+		if ("geolocation" in navigator) {
+			var watchId = navigator.geolocation.watchPosition(function(position) {
+				var latitud = position.coords.latitude;
+				var longitud = position.coords.longitude;
+				actualizarCoordenadas(latitud, longitud);
+				console.log(latitud,longitud,
+				document.getElementById("decibelios").textContent,
+				document.getElementById("voltaje").textContent);
+			});
+		} else {
+			alert("La geolocalización no es compatible con este navegador o dispositivo.");
+		}
+	}
+
+	// Comienza a observar las coordenadas al cargar la página
+	setInterval(watchCoordenadas(),5000);
+  </script>
+</body>
+</html>
