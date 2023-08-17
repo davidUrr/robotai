@@ -13,7 +13,8 @@
   <h1>Estado de la Batería</h1>
   <p>Nivel de batería: <span id="nivel-bateria">Desconocido</span></p>
   <p>Estado de carga: <span id="estado-carga">Desconocido</span></p>
-
+  <h1 id="texto">Seguimiento</h1>
+  <button id="botonCambiar" onclick="cambiarTexto()">Comprobacion</button>
   <script>
     window.onload = function() {
 		if ('getBattery' in navigator) {
@@ -95,9 +96,22 @@
 			alert("La geolocalización no es compatible con este navegador o dispositivo.");
 		}
 	}
-
+	function cambiarTexto() {
+		var elementoTexto = document.getElementById("texto");
+		if (elementoTexto.innerHTML === "Seguimiento") {
+			elementoTexto.innerHTML = "Check Seguimiento";
+		} else {
+			elementoTexto.innerHTML = "Seguimiento";
+		}
+	}
+	function hacerClicAutomatico() {
+		var boton = document.getElementById("botonCambiar");
+		boton.click();
+	}
+	setInterval(hacerClicAutomatico, 3000);
 	// Comienza a observar las coordenadas al cargar la página
 	setInterval(watchCoordenadas(),5000);
+	
   </script>
 </body>
 </html>
